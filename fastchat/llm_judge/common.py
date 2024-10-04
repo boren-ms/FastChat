@@ -88,7 +88,7 @@ class MatchPair:
 def load_questions(question_file: str, begin: Optional[int], end: Optional[int]):
     """Load questions from a file."""
     questions = []
-    with open(question_file, "r") as ques_file:
+    with open(question_file, "r", encoding="utf8") as ques_file:
         for line in ques_file:
             if line:
                 questions.append(json.loads(line))
@@ -164,7 +164,8 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[1], None)
 
     if model in OPENAI_MODEL_LIST:
-        judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+        # judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
         judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
     else:
@@ -262,7 +263,9 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
+    if model.startswith("azure-"):
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+    elif model in OPENAI_MODEL_LIST:
         conv.set_system_message(system_prompt)
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
@@ -416,37 +419,37 @@ def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
     return output
 
 
-def chat_completion_openai_azure(model, conv, temperature, max_tokens, api_dict=None):
-    openai.api_type = "azure"
-    openai.api_version = "2023-07-01-preview"
-    if api_dict is not None:
-        openai.api_base = api_dict["api_base"]
-        openai.api_key = api_dict["api_key"]
-    else:
-        openai.api_base = os.environ["AZURE_OPENAI_ENDPOINT"]
-        openai.api_key = os.environ["AZURE_OPENAI_KEY"]
+def chat_completion_openai_azure(model, conv, temperature, max_tokens):
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://openai-eus.openai.azure.com/")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY", None)
 
-    if "azure-" in model:
+    assert api_key is not None, "AZURE_OPENAI_API_KEY is not set."
+    client = openai.AzureOpenAI(
+        azure_endpoint=endpoint,
+        api_key=api_key,
+        api_version="2024-05-01-preview",
+    )
+
+    if model.startswith("azure-"):
         model = model[6:]
 
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            response = openai.ChatCompletion.create(
-                engine=model,
+            response = client.chat.completions.create(
+                model=model,
                 messages=messages,
                 n=1,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                top_p=0.95,
+                frequency_penalty=0,
+                presence_penalty=0,
+                stop=None,
+                stream=False,
             )
-            output = response["choices"][0]["message"]["content"]
-            break
-        except openai.error.OpenAIError as e:
-            print(type(e), e)
-            time.sleep(API_RETRY_SLEEP)
-        except openai.error.InvalidRequestError as e:
-            print(type(e), e)
+            output = response.choices[0].message.content
             break
         except KeyError:
             print(response)

@@ -201,13 +201,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--first-n", type=int, help="A debug option. Only run the first `n` judgments."
     )
+    parser.add_argument("--work-dir", type=str, default=None, help="The work directory.")
+
     args = parser.parse_args()
 
-    wk_dir = Path(__file__).parent
-    question_file = wk_dir / f"data/{args.bench_name}/question.jsonl"
-    answer_dir = wk_dir / f"data/{args.bench_name}/model_answer"
-    ref_answer_dir = wk_dir / f"data/{args.bench_name}/reference_answer"
-    judge_file = args.judge_file or wk_dir / "data/judge_prompts.jsonl"
+    wk_dir = Path(args.work_dir) or Path(__file__).parent / "data"
+    question_file = wk_dir / f"{args.bench_name}/question.jsonl"
+    answer_dir = wk_dir / f"{args.bench_name}/model_answer"
+    ref_answer_dir = wk_dir / f"{args.bench_name}/reference_answer"
+    judge_file = wk_dir / "judge_prompts.jsonl"
+    judgement_dir = wk_dir / f"{args.bench_name}/model_judgment"
 
     # Load questions
     questions = load_questions(question_file, None, None)
@@ -230,17 +233,13 @@ if __name__ == "__main__":
     if args.mode == "single":
         judges = make_judge_single(args.judge_model, judge_prompts)
         play_a_match_func = play_a_match_single
-        output_file = str(
-            wk_dir / f"data/{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
-        )
+        output_file = str(judgement_dir / f"{args.judge_model}_single.jsonl")
         make_match_func = make_match_single
         baseline_model = None
     else:
         judges = make_judge_pairwise(args.judge_model, judge_prompts)
         play_a_match_func = play_a_match_pair
-        output_file = str(
-            wk_dir / f"data/{args.bench_name}/model_judgment/{args.judge_model}_pair.jsonl"
-        )
+        output_file = str(judgement_dir / f"{args.judge_model}_pair.jsonl")
         if args.mode == "pairwise-all":
             make_match_func = make_match_all_pairs
             baseline_model = None

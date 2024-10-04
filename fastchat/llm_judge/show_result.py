@@ -2,18 +2,19 @@
 Usage:
 python3 show_result.py --mode [single|pairwise-baseline|pairwise-all]
 """
+
 import argparse
 import pandas as pd
+from pathlib import Path
 
 
 def display_result_single(args):
-    if args.input_file is None:
-        input_file = (
-            f"data/{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
-        )
-    else:
-        input_file = args.input_file
-
+    wk_dir = Path(args.work_dir) or Path(__file__).parent / "data"
+    input_file = (
+        args.input_file
+        or wk_dir / f"{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
+    )
+    output_file = Path(input_file).with_suffix(".tsv")
     print(f"Input file: {input_file}")
     df_all = pd.read_json(input_file, lines=True)
     df = df_all[["model", "score", "turn"]]
@@ -22,35 +23,31 @@ def display_result_single(args):
     if args.model_list is not None:
         df = df[df["model"].isin(args.model_list)]
 
-    print("\n########## First turn ##########")
-    df_1 = df[df["turn"] == 1].groupby(["model", "turn"]).mean()
-    print(df_1.sort_values(by="score", ascending=False))
-
-    if args.bench_name == "mt_bench":
-        print("\n########## Second turn ##########")
-        df_2 = df[df["turn"] == 2].groupby(["model", "turn"]).mean()
-        print(df_2.sort_values(by="score", ascending=False))
-
-        print("\n########## Average ##########")
-        df_3 = df[["model", "score"]].groupby(["model"]).mean()
-        print(df_3.sort_values(by="score", ascending=False))
+    gdf = (
+        df.groupby(["model", "turn"])
+        .agg(score=("score", "mean"), count=("score", "count"))
+        .reset_index()
+    )
+    agf = gdf.groupby("model").mean().reset_index()
+    agf["turn"] = "avg"
+    gdf = pd.concat([gdf, agf], ignore_index=True)
+    gdf = gdf.sort_values(by=["turn", "score"], ascending=(True, False))
+    print(gdf.to_csv(index=False, sep="\t", float_format="%.1f"))
+    gdf.to_csv(output_file, index=False, sep="\t", float_format="%.2f")
+    print(f"Result file: {output_file}")
 
 
 def display_result_pairwise(args):
-    if args.input_file is None:
-        input_file = (
-            f"data/{args.bench_name}/model_judgment/{args.judge_model}_pair.jsonl"
-        )
-    else:
-        input_file = args.input_file
-
+    wk_dir = Path(args.work_dir) or Path(__file__).parent / "data"
+    input_file = (
+        args.input_file
+        or wk_dir / f"{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
+    )
     print(f"Input file: {input_file}")
     df_all = pd.read_json(input_file, lines=True)
     df_all = df_all[(df_all["g1_winner"] != "error") & (df_all["g2_winner"] != "error")]
 
-    model_list = (
-        df_all["model_1"].unique().tolist() + df_all["model_2"].unique().tolist()
-    )
+    model_list = df_all["model_1"].unique().tolist() + df_all["model_2"].unique().tolist()
     model_list = list(set(model_list))
 
     list_res = []
@@ -84,9 +81,7 @@ def display_result_pairwise(args):
     df["win_rate"] = df["win"] / (df["win"] + df["loss"] + df["tie"])
     df["loss_rate"] = df["loss"] / (df["win"] + df["loss"] + df["tie"])
     # each tie counts as 0.5 win + 0.5 loss
-    df["win_rate_adjusted"] = (df["win"] + 0.5 * df["tie"]) / (
-        df["win"] + df["loss"] + df["tie"]
-    )
+    df["win_rate_adjusted"] = (df["win"] + 0.5 * df["tie"]) / (df["win"] + df["loss"] + df["tie"])
     # print(df.sort_values(by="win_rate", ascending=False))
     # print(df.sort_values(by="loss_rate", ascending=True))
     print(df.sort_values(by="win_rate_adjusted", ascending=False))
@@ -117,6 +112,7 @@ if __name__ == "__main__":
             "`single` runs single answer grading."
         ),
     )
+    parser.add_argument("--work-dir", type=str, default=None, help="The working directory.")
     args = parser.parse_args()
 
     if args.mode == "single":

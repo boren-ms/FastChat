@@ -36,3 +36,4 @@ val2014
 vqa_examples
 # mt_bench 
 fastchat/llm_judge/data/*
+fastchat/llm_judge/dev_data/*

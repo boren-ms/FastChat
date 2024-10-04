@@ -3,6 +3,7 @@ Usage:
 python3 qa_browser.py --share
 """
 
+from pathlib import Path
 import argparse
 from collections import defaultdict
 import re
@@ -383,13 +384,15 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int)
     parser.add_argument("--share", action="store_true")
     parser.add_argument("--bench-name", type=str, default="mt_bench")
+    parser.add_argument("--work-dir", type=str, default=None)
     args = parser.parse_args()
     print(args)
+    work_dir = Path(args.work_dir) or Path(__file__).parent / "data"
 
-    question_file = f"data/{args.bench_name}/question.jsonl"
-    answer_dir = f"data/{args.bench_name}/model_answer"
-    pairwise_model_judgment_file = f"data/{args.bench_name}/model_judgment/gpt-4_pair.jsonl"
-    single_model_judgment_file = f"data/{args.bench_name}/model_judgment/gpt-4_single.jsonl"
+    question_file = work_dir / f"{args.bench_name}/question.jsonl"
+    answer_dir = work_dir / f"{args.bench_name}/model_answer"
+    pairwise_model_judgment_file = work_dir / f"{args.bench_name}/model_judgment/gpt-4_pair.jsonl"
+    single_model_judgment_file = work_dir / f"{args.bench_name}/model_judgment/gpt-4_single.jsonl"
 
     # Load questions
     questions = load_questions(question_file, None, None)
