@@ -3,6 +3,7 @@
 Usage:
 python3 gen_model_answer.py --model-path lmsys/fastchat-t5-3b-v1.0 --model-id fastchat-t5-3b-v1.0
 """
+
 import argparse
 import json
 import os
@@ -12,6 +13,7 @@ import time
 import shortuuid
 import torch
 from tqdm import tqdm
+from pathlib import Path
 
 from fastchat.llm_judge.common import load_questions, temperature_config
 from fastchat.model import load_model, get_conversation_template
@@ -42,9 +44,7 @@ def run_eval(
     use_ray = num_gpus_total // num_gpus_per_model > 1
 
     if use_ray:
-        get_answers_func = ray.remote(num_gpus=num_gpus_per_model)(
-            get_model_answers
-        ).remote
+        get_answers_func = ray.remote(num_gpus=num_gpus_per_model)(get_model_answers).remote
     else:
         get_answers_func = get_model_answers
 
@@ -134,9 +134,7 @@ def get_model_answers(
                     # be consistent with the template's stop_token_ids
                     if conv.stop_token_ids:
                         stop_token_ids_index = [
-                            i
-                            for i, id in enumerate(output_ids)
-                            if id in conv.stop_token_ids
+                            i for i, id in enumerate(output_ids) if id in conv.stop_token_ids
                         ]
                         if len(stop_token_ids_index) > 0:
                             output_ids = output_ids[: stop_token_ids_index[0]]
@@ -212,9 +210,7 @@ if __name__ == "__main__":
         required=True,
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument(
-        "--model-id", type=str, required=True, help="A custom name for the model."
-    )
+    parser.add_argument("--model-id", type=str, required=True, help="A custom name for the model.")
     parser.add_argument(
         "--bench-name",
         type=str,
@@ -229,7 +225,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
-    parser.add_argument("--answer-file", type=str, help="The output answer file.")
+    parser.add_argument("--answer-file", type=str, default=None, help="The output answer file.")
     parser.add_argument(
         "--max-new-token",
         type=int,
@@ -248,9 +244,7 @@ if __name__ == "__main__":
         default=1,
         help="The number of GPUs per model.",
     )
-    parser.add_argument(
-        "--num-gpus-total", type=int, default=1, help="The total number of GPUs."
-    )
+    parser.add_argument("--num-gpus-total", type=int, default=1, help="The total number of GPUs.")
     parser.add_argument(
         "--max-gpu-memory",
         type=str,
@@ -269,7 +263,7 @@ if __name__ == "__main__":
         default="main",
         help="The model revision to load.",
     )
-
+    parser.add_argument("--work-dir", type=str, default=None, help="The work directory.")
     args = parser.parse_args()
 
     if args.num_gpus_total // args.num_gpus_per_model > 1:
@@ -277,11 +271,10 @@ if __name__ == "__main__":
 
         ray.init()
 
-    question_file = f"data/{args.bench_name}/question.jsonl"
-    if args.answer_file:
-        answer_file = args.answer_file
-    else:
-        answer_file = f"data/{args.bench_name}/model_answer/{args.model_id}.jsonl"
+    wk_dir = Path(args.work_dir) or Path(__file__).parent / "data"
+    bench_dir = wk_dir / args.bench_name
+    question_file = bench_dir / "question.jsonl"
+    answer_file = args.answer_file or bench_dir / f"model_answer/{args.model_id}.jsonl"
 
     print(f"Output to {answer_file}")
 
