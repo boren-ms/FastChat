@@ -31,10 +31,10 @@ TIE_DELTA = 0.1
 NEED_REF_CATS = ["math", "reasoning", "coding", "arena-hard-200"]
 
 # Extract scores from judgments
-two_score_pattern = re.compile("\[\[(\d+\.?\d*),\s?(\d+\.?\d*)\]\]")
-two_score_pattern_backup = re.compile("\[(\d+\.?\d*),\s?(\d+\.?\d*)\]")
-one_score_pattern = re.compile("\[\[(\d+\.?\d*)\]\]")
-one_score_pattern_backup = re.compile("\[(\d+\.?\d*)\]")
+two_score_pattern = re.compile(r"\[\[(\d+\.?\d*),\s?(\d+\.?\d*)\]\]")
+two_score_pattern_backup = re.compile(r"\[(\d+\.?\d*),\s?(\d+\.?\d*)\]")
+one_score_pattern = re.compile(r"\[\[(\d+\.?\d*)\]\]")
+one_score_pattern_backup = re.compile(r"\[(\d+\.?\d*)\]")
 
 # Sampling temperature configs for
 temperature_config = {
@@ -166,9 +166,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     if model in OPENAI_MODEL_LIST:
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
-        judgment = chat_completion_anthropic(
-            model, conv, temperature=0, max_tokens=1024
-        )
+        judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
@@ -182,9 +180,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
         else:
             rating = -1
     else:
-        raise ValueError(
-            f"invalid output format: {judge.prompt_template['output_format']}"
-        )
+        raise ValueError(f"invalid output format: {judge.prompt_template['output_format']}")
 
     return rating, user_prompt, judgment
 
@@ -273,9 +269,7 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
         if system_prompt != "You are a helpful assistant.":
             user_prompt = "[Instruction]\n" + system_prompt + "\n\n" + user_prompt
             conv.messages[0][1] = user_prompt
-        judgment = chat_completion_anthropic(
-            model, conv, temperature=0, max_tokens=1024
-        )
+        judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
@@ -303,9 +297,7 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
         else:
             winner = "error"
     else:
-        raise ValueError(
-            f"invalid output format: {judge.prompt_template['output_format']}"
-        )
+        raise ValueError(f"invalid output format: {judge.prompt_template['output_format']}")
 
     return winner, user_prompt, judgment
 
@@ -358,12 +350,8 @@ def play_a_match_pair(match: MatchPair, output_file: str):
             f"judge: {(judge.model_name, judge.prompt_template['name'])}"
         )
     elif judge.prompt_template["type"] == "single":
-        m1_score, m1_user_prompt, m1_judgment = run_judge_single(
-            question, answer_1, judge
-        )
-        m2_score, m2_user_prompt, m2_judgment = run_judge_single(
-            question, answer_2, judge
-        )
+        m1_score, m1_user_prompt, m1_judgment = run_judge_single(question, answer_1, judge)
+        m2_score, m2_user_prompt, m2_judgment = run_judge_single(question, answer_2, judge)
 
         if abs(m1_score - m2_score) <= TIE_DELTA:
             winner = "tie"
@@ -677,8 +665,7 @@ def get_single_judge_explanation(gamekey, judgment_dict):
         g1_score = res["score"]
 
         return (
-            f"**Game 1**. **A**: {model}, **Score**: {g1_score}\n\n"
-            f"**Judgment**: {g1_judgment}"
+            f"**Game 1**. **A**: {model}, **Score**: {g1_score}\n\n" f"**Judgment**: {g1_judgment}"
         )
     except KeyError:
         return "N/A"

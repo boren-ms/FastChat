@@ -2,9 +2,11 @@
 Usage:
 python gen_judgment.py --model-list [LIST-OF-MODEL-ID] --parallel [num-concurrent-api-call] --mode [single|pairwise-baseline|pairwise-all]
 """
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -58,9 +60,7 @@ def make_match(
                     multi_turn=multi_turn,
                 )
             else:
-                match = MatchPair(
-                    dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn
-                )
+                match = MatchPair(dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn)
             matches.append(match)
     return matches
 
@@ -98,9 +98,7 @@ def make_match_all_pairs(
                         multi_turn=multi_turn,
                     )
                 else:
-                    match = MatchPair(
-                        dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn
-                    )
+                    match = MatchPair(dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn)
                 matches.append(match)
     return matches
 
@@ -125,9 +123,7 @@ def make_match_single(
             if ref_answers is not None:
                 ref = ref_answers[judge.model_name][q_id]
                 matches.append(
-                    MatchSingle(
-                        dict(q), m, a, judge, ref_answer=ref, multi_turn=multi_turn
-                    )
+                    MatchSingle(dict(q), m, a, judge, ref_answer=ref, multi_turn=multi_turn)
                 )
             else:
                 matches.append(MatchSingle(dict(q), m, a, judge, multi_turn=multi_turn))
@@ -138,9 +134,7 @@ def make_judge_pairwise(judge_model, judge_prompts):
     judges = {}
     judges["default"] = Judge(judge_model, judge_prompts["pair-v2"])
     judges["math"] = Judge(judge_model, judge_prompts["pair-math-v1"], ref_based=True)
-    judges["default-mt"] = Judge(
-        judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True
-    )
+    judges["default-mt"] = Judge(judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True)
     judges["math-mt"] = Judge(
         judge_model,
         judge_prompts["pair-math-v1-multi-turn"],
@@ -177,7 +171,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--judge-file",
         type=str,
-        default="data/judge_prompts.jsonl",
+        default=None,
         help="The file of judge prompts.",
     )
     parser.add_argument("--judge-model", type=str, default="gpt-4")
@@ -209,9 +203,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    question_file = f"data/{args.bench_name}/question.jsonl"
-    answer_dir = f"data/{args.bench_name}/model_answer"
-    ref_answer_dir = f"data/{args.bench_name}/reference_answer"
+    wk_dir = Path(__file__).parent
+    question_file = wk_dir / f"data/{args.bench_name}/question.jsonl"
+    answer_dir = wk_dir / f"data/{args.bench_name}/model_answer"
+    ref_answer_dir = wk_dir / f"data/{args.bench_name}/reference_answer"
+    judge_file = args.judge_file or wk_dir / "data/judge_prompts.jsonl"
 
     # Load questions
     questions = load_questions(question_file, None, None)
@@ -221,7 +217,7 @@ if __name__ == "__main__":
     ref_answers = load_model_answers(ref_answer_dir)
 
     # Load judge
-    judge_prompts = load_judge_prompts(args.judge_file)
+    judge_prompts = load_judge_prompts(judge_file)
 
     if args.first_n:
         questions = questions[: args.first_n]
@@ -234,16 +230,16 @@ if __name__ == "__main__":
     if args.mode == "single":
         judges = make_judge_single(args.judge_model, judge_prompts)
         play_a_match_func = play_a_match_single
-        output_file = (
-            f"data/{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
+        output_file = str(
+            wk_dir / f"data/{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
         )
         make_match_func = make_match_single
         baseline_model = None
     else:
         judges = make_judge_pairwise(args.judge_model, judge_prompts)
         play_a_match_func = play_a_match_pair
-        output_file = (
-            f"data/{args.bench_name}/model_judgment/{args.judge_model}_pair.jsonl"
+        output_file = str(
+            wk_dir / f"data/{args.bench_name}/model_judgment/{args.judge_model}_pair.jsonl"
         )
         if args.mode == "pairwise-all":
             make_match_func = make_match_all_pairs
@@ -316,7 +312,5 @@ if __name__ == "__main__":
         np.random.shuffle(matches)
 
         with ThreadPoolExecutor(args.parallel) as executor:
-            for match in tqdm(
-                executor.map(play_a_match_wrapper, matches), total=len(matches)
-            ):
+            for match in tqdm(executor.map(play_a_match_wrapper, matches), total=len(matches)):
                 pass

@@ -61,9 +61,8 @@ def display_pairwise_answer(
         multi_turn=False,
     )
 
-    explanation = (
-        "##### Model Judgment (first turn)\n"
-        + get_pairwise_judge_explanation(gamekey, judgment_dict)
+    explanation = "##### Model Judgment (first turn)\n" + get_pairwise_judge_explanation(
+        gamekey, judgment_dict
     )
 
     judgment_dict_turn2 = resolve_pairwise_judgment_dict(
@@ -73,9 +72,8 @@ def display_pairwise_answer(
         multi_turn=True,
     )
 
-    explanation_turn2 = (
-        "##### Model Judgment (second turn)\n"
-        + get_pairwise_judge_explanation(gamekey, judgment_dict_turn2)
+    explanation_turn2 = "##### Model Judgment (second turn)\n" + get_pairwise_judge_explanation(
+        gamekey, judgment_dict_turn2
     )
 
     return chat_mds + [explanation] + [explanation_turn2]
@@ -102,23 +100,22 @@ def display_single_answer(question_selector, model_selector1, request: gr.Reques
         q, model_judgments_normal_single, model_judgments_math_single, multi_turn=True
     )
 
-    explanation_turn2 = (
-        "##### Model Judgment (second turn)\n"
-        + get_single_judge_explanation(gamekey, judgment_dict_turn2)
+    explanation_turn2 = "##### Model Judgment (second turn)\n" + get_single_judge_explanation(
+        gamekey, judgment_dict_turn2
     )
 
     return chat_mds + [explanation] + [explanation_turn2]
 
 
-newline_pattern1 = re.compile("\n\n(\d+\. )")
-newline_pattern2 = re.compile("\n\n(- )")
+newline_pattern1 = re.compile(r"\n\n(\d+\. )")
+newline_pattern2 = re.compile(r"\n\n(- )")
 
 
 def post_process_answer(x):
     """Fix Markdown rendering problems."""
     x = x.replace("\u2022", "- ")
-    x = re.sub(newline_pattern1, "\n\g<1>", x)
-    x = re.sub(newline_pattern2, "\n\g<1>", x)
+    x = re.sub(newline_pattern1, r"\n\g<1>", x)
+    x = re.sub(newline_pattern2, r"\n\g<1>", x)
     return x
 
 
@@ -353,7 +350,7 @@ block_css = """
 
 
 def load_demo():
-    dropdown_update = gr.Dropdown.update(value=list(category_selector_map.keys())[0])
+    dropdown_update = gr.Dropdown(value=list(category_selector_map.keys())[0])
     return dropdown_update, dropdown_update
 
 
@@ -391,12 +388,8 @@ if __name__ == "__main__":
 
     question_file = f"data/{args.bench_name}/question.jsonl"
     answer_dir = f"data/{args.bench_name}/model_answer"
-    pairwise_model_judgment_file = (
-        f"data/{args.bench_name}/model_judgment/gpt-4_pair.jsonl"
-    )
-    single_model_judgment_file = (
-        f"data/{args.bench_name}/model_judgment/gpt-4_single.jsonl"
-    )
+    pairwise_model_judgment_file = f"data/{args.bench_name}/model_judgment/gpt-4_pair.jsonl"
+    single_model_judgment_file = f"data/{args.bench_name}/model_judgment/gpt-4_single.jsonl"
 
     # Load questions
     questions = load_questions(question_file, None, None)
@@ -405,16 +398,14 @@ if __name__ == "__main__":
     model_answers = load_model_answers(answer_dir)
 
     # Load model judgments
-    model_judgments_normal_single = (
-        model_judgments_math_single
-    ) = load_single_model_judgments(single_model_judgment_file)
-    model_judgments_normal_pairwise = (
-        model_judgments_math_pairwise
-    ) = load_pairwise_model_judgments(pairwise_model_judgment_file)
+    model_judgments_normal_single = model_judgments_math_single = load_single_model_judgments(
+        single_model_judgment_file
+    )
+    model_judgments_normal_pairwise = model_judgments_math_pairwise = load_pairwise_model_judgments(
+        pairwise_model_judgment_file
+    )
 
     demo = build_demo()
-    demo.queue(
-        default_concurrency_limit=10, status_update_rate=10, api_open=False
-    ).launch(
+    demo.queue(default_concurrency_limit=10, status_update_rate=10, api_open=False).launch(
         server_name=args.host, server_port=args.port, share=args.share, max_threads=200
     )
