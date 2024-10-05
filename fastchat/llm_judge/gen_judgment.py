@@ -60,7 +60,9 @@ def make_match(
                     multi_turn=multi_turn,
                 )
             else:
-                match = MatchPair(dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn)
+                match = MatchPair(
+                    dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn
+                )
             matches.append(match)
     return matches
 
@@ -98,7 +100,9 @@ def make_match_all_pairs(
                         multi_turn=multi_turn,
                     )
                 else:
-                    match = MatchPair(dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn)
+                    match = MatchPair(
+                        dict(q), m_1, m_2, a_1, a_2, judge, multi_turn=multi_turn
+                    )
                 matches.append(match)
     return matches
 
@@ -123,7 +127,9 @@ def make_match_single(
             if ref_answers is not None:
                 ref = ref_answers[judge.model_name][q_id]
                 matches.append(
-                    MatchSingle(dict(q), m, a, judge, ref_answer=ref, multi_turn=multi_turn)
+                    MatchSingle(
+                        dict(q), m, a, judge, ref_answer=ref, multi_turn=multi_turn
+                    )
                 )
             else:
                 matches.append(MatchSingle(dict(q), m, a, judge, multi_turn=multi_turn))
@@ -134,7 +140,9 @@ def make_judge_pairwise(judge_model, judge_prompts):
     judges = {}
     judges["default"] = Judge(judge_model, judge_prompts["pair-v2"])
     judges["math"] = Judge(judge_model, judge_prompts["pair-math-v1"], ref_based=True)
-    judges["default-mt"] = Judge(judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True)
+    judges["default-mt"] = Judge(
+        judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True
+    )
     judges["math-mt"] = Judge(
         judge_model,
         judge_prompts["pair-math-v1-multi-turn"],
@@ -201,7 +209,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--first-n", type=int, help="A debug option. Only run the first `n` judgments."
     )
-    parser.add_argument("--work-dir", type=str, default=None, help="The work directory.")
+    parser.add_argument(
+        "--work-dir", type=str, default=None, help="The work directory."
+    )
 
     args = parser.parse_args()
 
@@ -311,5 +321,7 @@ if __name__ == "__main__":
         np.random.shuffle(matches)
 
         with ThreadPoolExecutor(args.parallel) as executor:
-            for match in tqdm(executor.map(play_a_match_wrapper, matches), total=len(matches)):
+            for match in tqdm(
+                executor.map(play_a_match_wrapper, matches), total=len(matches)
+            ):
                 pass
