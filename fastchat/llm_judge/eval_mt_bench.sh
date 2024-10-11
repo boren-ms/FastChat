@@ -14,8 +14,10 @@ base_models=(
 new_models=(
     # Phi-Omni_20241009
     # Phi-Omni-Audio_20241010
+    Phi3.5-Omni-audio_20241010
     Phi3.5-Omni-text_20241010
-    Phi3.5-Omni-speech_20241010
+    # Phi3.5-Omni-text-v0_20241010_221331
+    # Phi3.5-Omni-audio-v0_20241010_222909
     )
     
 models=(${base_models[@]} ${new_models[@]})
