@@ -16,7 +16,8 @@ models=(
     # Phi3.5-Omni-text_20241010
     # Phi3.5-Omni-text-v0_20241010_221331
     # Phi3.5-Omni-audio-v0_20241010_222909
-    Phi3.5-internal_20241011_182438
+    Phi3.5-Omni-text-v0b_20241011_192510
+    Phi3.5-Omni-audio-v0b_20241011_194120
     )
     
 
