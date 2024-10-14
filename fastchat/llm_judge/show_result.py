@@ -17,11 +17,15 @@ def display_result_single(args):
     output_file = Path(input_file).with_suffix(".tsv")
     print(f"Input file: {input_file}")
     df_all = pd.read_json(input_file, lines=True)
-    df = df_all[["model", "score", "turn"]]
+    df = df_all[["model", "score", "turn", "question_id"]]
     df = df[df["score"] != -1]
 
     if args.model_list is not None:
         df = df[df["model"].isin(args.model_list)]
+
+    df = df.drop_duplicates(subset=["model", "question_id", "turn"], keep="last")
+    if args.exclude is not None:
+        df = df[~df["question_id"].isin(args.exclude)]
 
     gdf = (
         df.groupby(["model", "turn"])
@@ -113,6 +117,9 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument("--work-dir", type=str, default=None, help="The working directory.")
+    parser.add_argument(
+        "--exclude", type=int, nargs="+", default=None, help="Exclude question ids."
+    )
     args = parser.parse_args()
 
     if args.mode == "single":
