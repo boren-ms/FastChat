@@ -18,13 +18,16 @@ models=(
     # Phi3.5-Omni-audio-v0_20241010_222909
     # Phi3.5-Omni-text-v0b_20241011_192510
     # Phi3.5-Omni-audio-v0b_20241011_194120
+    Phi-3.5-Speech-opendata-audio-_20241030_235359
+    Phi-3.5-Speech-V1.2-audio-_20241030_234333
+    Phi-3.5-Speech-opendata-text-_20241030_230246
     Phi-3.5-Speech-V1.2-text-_20241030_225348
     )
     
 
-for model_id in ${models[@]}; do
-    python gen_judgment.py --work-dir ${work_dir} --model-list $model_id --judge-model gpt-4
-done
+# for model_id in ${models[@]}; do
+#     python gen_judgment.py --work-dir ${work_dir} --model-list $model_id --judge-model gpt-4
+# done
 
 # https://speechinsightseus.blob.core.windows.net/automatedinsights-prod/mt/bench/whisper/small/en-US/16b84634-ebf3-465c-a692-12ea7c015a15/UtteranceDetails_NonDisfluency_TER.html?skoid=1538c72b-dd4c-420b-b3a4-f23f07fd6a02&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2024-10-14T18%3A54%3A00Z&ske=2024-10-16T18%3A54%3A00Z&sks=b&skv=2024-05-04&sv=2024-05-04&spr=https&st=2024-10-14T18%3A54%3A00Z&se=2024-10-16T18%3A54%3A00Z&sr=c&sp=rl&sig=zeAsF0S5AJLckYv7kkxLG1nLVrwZ8vIrxEqaGtT54b8%3D
 python show_result.py --work-dir ${work_dir} --model-list  ${models[@]} 
